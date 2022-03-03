@@ -1,0 +1,6 @@
+db:
+  host: "localhost"
+  port: "3306"
+  password: "Ethiopia*1"
+  database: "sql_store"
+  user: "root"

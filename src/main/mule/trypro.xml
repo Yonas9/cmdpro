@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sockets="http://www.mulesoft.org/schema/mule/sockets" xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/sockets http://www.mulesoft.org/schema/mule/sockets/current/mule-sockets.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bf49b2b5-e5e7-49e4-8f19-86e3f7aec7bd" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="c708d29e-1bf6-42a7-abd9-70b1addfffd1" />
+	<configuration-properties doc:name="Configuration properties" doc:id="59d5c642-a2dc-4fe8-a416-56c03f3ef8ab" file="config.yaml" />
+	<file:config name="File_Config" doc:name="File Config" doc:id="a4d5a376-fe7d-4e92-8f05-95ab79f7d8a7" >
+		<file:connection workingDir="C:\Users\YonasEluna\Desktop\exam" />
+	</file:config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="5f5bd734-caca-4d63-a009-96e097ad68fd" />
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="95519135-4706-4107-8b30-51c1c7934914" >
+		<http:listener-connection host="0.0.0.0" port="2222" />
+	</http:listener-config>
+	<http:listener-config name="HTTP_Listener_config2" doc:name="HTTP Listener config" doc:id="3d2bd0eb-2a24-4226-a2ef-01ac4c42ace1" >
+		<http:listener-connection host="0.0.0.0" port="3333" />
+	</http:listener-config>
+	<flow name="ErrorHandling" doc:id="ca5753c1-789c-404b-97cc-531a325ac8c2" initialState="started">
+		<http:listener doc:name="Listener" doc:id="42b2172b-fd4c-4871-9cf6-cf5f46242451" config-ref="HTTP_Listener_config" path="/check"/>
+		<set-payload value="#[output application/json &#10;---&#10;['a','b','c','d','e']]" doc:name="Payload" doc:id="be91a88d-2c5e-43a5-9ced-399efad13739" />
+		<batch:job jobName="tryproBatch_Job1" doc:id="920182e2-f576-420a-970e-4a167b6c5632" >
+			<batch:process-records >
+				<batch:step name="Batch_Step2" doc:id="0802dbd7-5734-4552-a321-a9ec7c21b532" acceptExpression='#[not ( payload contains "b")]'>
+					<ee:transform doc:name="Transform Message" doc:id="33ad6091-ac06-4c7d-ab12-6ec123d9d749" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+upper(payload)]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="c0a51628-e5a9-47d7-8a2e-7febf6e74c53" size="3">
+						<logger level="INFO" doc:name="Logger" doc:id="24d72239-c572-42d7-bf5f-43cca55ba955" message="#[output application/json&#10; ---&#10;payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5aadd1d2-5057-4549-b8a8-5e22cacd8122" >
+				<set-payload value="ParentError" doc:name="ParentError" doc:id="d0e3cc2f-4119-46f1-8943-a90e6bcb702e" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="private" doc:id="c70bb29c-a07f-440a-bf8f-03ad18214527" initialState="stopped">
+		<validation:is-number doc:name="payload" doc:id="a44b260f-a501-40d9-aa9b-4cc2f3205ea7" value="#[payload]" config-ref="Validation_Config" numberType="INTEGER" message="Validation Error"/>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="4ae0344f-b19c-4406-a7d3-d2648dc11acd" >
+				<set-payload value="ChildError" doc:name="ChildError" doc:id="410ccb50-f679-487c-855a-1bceeebe2516" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="parent" doc:id="a161c153-4873-4aa5-b2b4-c4450511d952" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="c2df121d-e9e3-44fe-a2a3-ad0a78782122" config-ref="HTTP_Listener_config" path="/parent/{model}"/>
+		<set-payload value='#["planeService history"]' doc:name="payload" doc:id="3467997e-9c7f-4bea-bff5-544cc733a641" />
+		<set-variable value='#[attributes.uriParams.model]' doc:name="Set Variable" doc:id="52e36ce7-5047-44ad-b464-677777f479a1" variableName="model"/>
+		<http:request method="POST" doc:name="Request" doc:id="267bc9ce-f226-4f16-89c5-4a91d6ef4a36" url="http://localhost:8081/child" target="addressInfo" responseTimeout="5000000"/>
+		<logger level="INFO" doc:name="Logger" doc:id="03fcade9-f119-4185-abaa-49bba9987926" message="parent variable--------------------------#[vars.model]"/>
+	</flow>
+	<flow name="child" doc:id="740bbd90-cacd-48d2-ac94-541c94f6ce69" initialState="started">
+		<http:listener doc:name="Listener" doc:id="954882a6-da06-4839-bec4-3d1246066d49" config-ref="HTTP_Listener_config" path="/"/>
+		<set-payload value='Before' doc:name="Before" doc:id="85dd1344-f3a1-483f-b7b5-5363e6f85b06" />
+		<validation:is-null doc:name="Is null" doc:id="2e0292aa-7004-4034-9050-f51819c7ef1e" value="#[payload]"/>
+		<set-payload value="After" doc:name="After" doc:id="3dcec698-2fa1-4887-af33-0826d4675a85" />
+	</flow>
+	<flow name="forEach" doc:id="6091106a-eb52-4f3c-b1b9-3cd7cf243457" initialState="stopped">
+		<http:listener doc:name="get/Test" doc:id="99ae7705-88e9-47c6-a3ce-fbbf5aa929eb" config-ref="HTTP_Listener_config" path="/test"/>
+		<set-payload value="#[output application/json --- [70,65,100,60,85]]" doc:name="Set Payload" doc:id="f5e2d83e-7e2d-4186-a93a-0f2fbe6e36a4" />
+		<foreach doc:name="For Each" doc:id="aaa1f070-8ce9-4388-bca9-b8b7ee3f4530" >
+			<http:request method="POST" doc:name="Request" doc:id="799dec04-7f87-4e43-b7c6-a297ff6c4923" url="http://localhost:8081/updateTemp" responseTimeout="50000000" outputMimeType="application/json"/>
+		</foreach>
+	</flow>
+	<flow name="update" doc:id="d7c5fcc1-23a5-4c82-80b8-72a843d8a2a4" initialState="stopped">
+		<http:listener doc:name="updateTemp" doc:id="f8cfc249-9c76-46c8-ae61-c49f43ae02bc" config-ref="HTTP_Listener_config" path="/updateTemp" allowedMethods="POST"/>
+		<os:store doc:name="Store" doc:id="668ab8e6-acdf-4ac3-9c35-2296b7879f0c" key="temp" objectStore="Object_store" failOnNullValue="false">
+		</os:store>
+		<logger level="INFO" doc:name="Logger" doc:id="fbb5cc87-00a2-49b8-a3ca-424cfcb53c87" message="Store----------------------- #[payload]"/>
+	</flow>
+	<flow name="temp" doc:id="f7787852-d961-45ee-8439-41e973f7ce60" initialState="stopped">
+		<http:listener doc:name="getTemp" doc:id="9d1845df-67dd-460b-8742-700b840c0d64" config-ref="HTTP_Listener_config" path="/getTemp"/>
+		<os:retrieve-all doc:name="Retrieve all" doc:id="fe4e3ea3-97f2-4e14-ab25-e59bd0390989" objectStore="Object_store"/>
+		<set-payload value="#[output application/json &#10;--- &#10;payload]" doc:name=" Payload" doc:id="44f75628-7069-4d89-b3de-c4e554e76b5d" />
+		<logger level="INFO" doc:name="Logger" doc:id="edabb193-ea28-4e79-948e-169682792b8a" message="Retrieve ------------------------------- #[payload] "/>
+	</flow>
+	<flow name="creatOrder" doc:id="72d3b3c8-9cf3-436b-a3ac-7ad65edbf845" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="9d972492-98f0-4338-839f-578f8ae06890" config-ref="HTTP_Listener_config" path="/order"/>
+		<set-payload value='#[lookup("addItem",{"price":"100","item":"router","itemType":"cable"})]' doc:name="addItemToOrder" doc:id="45a2cddc-39fa-490f-ba8d-bec398984569" />
+	</flow>
+	<flow name="addItem" doc:id="a6f73d66-5732-4f4e-a38d-77c7b1fd3470" >
+		<set-payload value="#[output application/json&#10;---&#10;order:{&#10;	item:{&#10;		itemName:payload.item,&#10;		itemType:payload.itemType,&#10;		price:payload.price&#10;	}&#10;}]" doc:name="creatOrderObject" doc:id="9b2eaee9-534e-435c-b1ae-cdab2c8ea7fe" />
+	</flow>
+	<flow name="tryproFlow4" doc:id="88689a2d-7d01-4db1-8ed2-12437b754b56" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="011a887a-7c39-49b4-915d-68337a232b7c" config-ref="HTTP_Listener_config" path="/decide"/>
+		<set-payload value='#["blue"]' doc:name="blue" doc:id="3191e148-112d-4315-9478-918d032617ad" />
+		<choice doc:name="Choice" doc:id="d6d05177-a2b0-4447-a0c3-82f93d5f5a2b" >
+			<when expression='#[payload contains  "Red"]'>
+				<set-payload value='#["BLK"]' doc:name="BLK" doc:id="2dededc5-6659-4c3b-bb63-088d2a8f7e61" />
+			</when>
+			<when expression='#[payload contains  "BLK"]'>
+				<set-payload value='#["Green"]' doc:name="Green" doc:id="4ff76eb6-acdd-4766-9202-71ef74f66dc3" />
+			</when>
+			<otherwise >
+				<set-payload value='#["Red"]' doc:name="Red" doc:id="b2574946-5e99-4b87-9b0b-ed90b584807b" />
+				<flow-ref doc:name="Flow Reference" doc:id="ebfe3b18-58f9-4c33-8658-f43c3cfbf8b1" name="tryproFlow4"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="tryproFlow5" doc:id="be87ee6a-d5f9-4987-b266-92a37c8f0065" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="e3b6a6a8-54af-41b7-8fed-e3f7bbafabef" config-ref="HTTP_Listener_config" path="/color"/>
+		<logger level="INFO" doc:name="Logger" doc:id="11288f03-b67f-4201-9460-09f55175ed3c" message='#[output application/json &#10;--- &#10;{flow:"child",qtyAttributes: attributes.queryParams.quantity,quantityVar:vars.quantity,paylod:payload}]'/>
+		<set-payload doc:name="Set Payload" doc:id="b7f98932-5c2c-4a94-a6bc-10f8171fe607" value="the child flow finished"/>
+	</flow>
+	<flow name="tryproFlow3" doc:id="2240751e-c23c-46f7-a804-d6285ce8e385" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="a853b4c6-2bf8-455b-923e-db3c6305f29b" config-ref="HTTP_Listener_config" path="/error"/>
+		<set-payload value="#[payload]" doc:name="payload" doc:id="36a845ff-1f4a-4471-a07b-b870fd29ffa8" />
+		<try doc:name="Try" doc:id="7452d9b9-89b6-4f02-b103-785bbf732413" >
+			<validation:is-null doc:name="payload" doc:id="07f5183b-badf-4c85-9558-40e6cd940f51" value="#[payload]"/>
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="d0bc58dd-6232-497f-a1fb-2928085538a0" >
+					<set-payload value='#["Error TryScope"]' doc:name="Error TryScope" doc:id="975916a3-93b5-42cf-ae5d-92b0df11461b" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<set-payload value='#["Success main Flow"]' doc:name="Success MainFlow" doc:id="652b1db9-70b9-4a22-a4ad-7593e695621d" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6762cc28-dc78-491b-9ae1-7838b22f311f" >
+				<set-payload value="Error Main Flow" doc:name="Error Main Flow" doc:id="d6496067-5fe2-4327-bad1-7e01ba37deb9" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="tryproFlow2" doc:id="60bdefb9-8be0-46c2-90a2-6958c7417405" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="3d3c0dfd-f8ed-4e1b-b72b-cc155fb967f6" config-ref="HTTP_Listener_config" path="/blank"/>
+		<ee:transform doc:name="Transform Message" doc:id="4f0726e3-d52b-4bf6-8180-6d389631025f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{"size":"large","amount":1000,"price":400.00},{"size":"medium","amount":400,"price":600.00},{"size":"small","amount":1,"price":800.00}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="tryproBatch_Job" doc:id="0ac3c7f4-f9ef-47f9-9069-d2f039dd3281" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="63167f39-24e2-4f13-a73a-571373ece4d1" acceptExpression="payload.amount&lt;500">
+					<set-payload value='#[{"amount":payload.amount + 100}]' doc:name="Set Payload" doc:id="cb9a4bde-f132-4ce2-b4bf-976d0b44d44c" />
+					<logger level="INFO" doc:name="Logger" doc:id="320d9288-96ec-4a22-8828-a6b4feb42337" message="#[payload]" />
+				</batch:step>
+				<batch:step name="Batch_Step1" doc:id="9021acb1-e64d-4f43-a59c-16718af6353c" acceptExpression="payload.amount&gt;200">
+					<set-payload value='#[{"step2amount": payload.amount}]' doc:name="Set Payload" doc:id="88264da1-f4b7-45a5-bee8-a7debd80867d" />
+					<logger level="INFO" doc:name="Logger" doc:id="fffb6fe1-59be-462e-9645-9a9b6266854e" message="#[payload]"/>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+	</flow>
+	<flow name="tryproFlow1" doc:id="229cb4b0-d6dd-47dc-9017-da45816737fc" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="d5b02a58-3e58-40fb-9356-ab4e0bfca3aa" path="/student" config-ref="HTTP_Listener_config"/>
+		<set-payload value='#[{student:{"name":"Anay","age":8}}]' doc:name="Set Payload" doc:id="3ff0e2f9-cfb9-4d3c-adac-851cec16fbfa" />
+		<logger level="INFO" doc:name="Logger" doc:id="09a5e30d-a7f4-4b85-a1a2-28836fb54b62" message='Result #["INFO" ++ payload]'/>
+	</flow>
+	<flow name="tryproFlow" doc:id="f77fb8ea-8c4e-4ec3-ba82-4f8cbe11fac4" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="8b8d9186-f753-416f-85e7-fa70939d1cb2" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="3" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-payload value="#[[1,2,3,4]]" doc:name="[1,2,3,4]" doc:id="cc0732b8-b54b-40e9-be33-15e554f7e33f" />
+		<set-variable value="#[1]" doc:name="count=1" doc:id="70152e28-b017-483b-93ec-50ca9983cd7b" variableName="count"/>
+		<foreach doc:name="For Each" doc:id="3e80bf9e-4987-45fd-b5d1-cdceb21e3760" >
+			<set-payload value='#["Req"++ payload]' doc:name="Set Payload" doc:id="3b7242b1-1230-442d-b4ef-2a0c6e239d8b" />
+			<set-variable value="#[vars.count + 1]" doc:name="count +1" doc:id="48fa3d4f-ce42-4586-89f0-1b5eaa5485d3" variableName="count"/>
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="79d32098-31a2-46bc-afe0-1912cf646917" message="#[[payload,vars.count]]"/>
+	</flow>
+</mule>
